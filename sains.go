@@ -64,17 +64,7 @@ func main() {
 	// use CSS selector found with the browser inspector
 	// for each, use index and item
 
-	//fmt.Print(doc.Find("ul"))
-	// 	findInDoc(doc, "ul",findInDoc(doc, "li", func() {
-	//
-	// 	})).Each(func(arg1 int, arg1 *goquery.Selection {
-	//
-	// 	})
-	// findInDoc(doc, "li", func() {
-	//
-	// })
-
-	doc.Find("ul").Each(func(index int, ul *goquery.Selection) {
+	doc.Find("[id^=productLister]").Each(func(index int, ul *goquery.Selection) {
 		ul.Find("li").Each(func(i int, li *goquery.Selection) {
 			// Get the title
 			h3Selector := li.Find("h3")
@@ -94,9 +84,11 @@ func main() {
 				}
 
 				// Get unit price
-				doc2.Find("[id^=addItem]").Each(func(ii int, div *goquery.Selection) {
-					div.Find("p").Each(func(i int, pp *goquery.Selection) {
+				doc2.Find("[id^=addItem]").Each(func(ii int, itemPrice *goquery.Selection) {
+					itemPrice.Find("[class$=pricePerUnit]").Each(func(i int, pp *goquery.Selection) {
+
 						pptag, _ := pp.Attr("class")
+						fmt.Printf("elem -->%v<--", pptag)
 						if pptag == "pricePerUnit" {
 							jItem.UnitPrice = strings.TrimSpace(pp.Text())
 						}
@@ -142,14 +134,6 @@ func getSize(url string, unit string) (float32, error) {
 	return float32(l), nil
 
 }
-
-//func findInDoc(doc *goquery.Document, selector string, func1 findInDocT) *goquery.Selection {
-
-//return doc.Find(selector).Each(func1)
-
-//}
-
-//func getTitleInDoc()
 
 func usage() {
 
