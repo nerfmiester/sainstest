@@ -66,29 +66,34 @@ func main() {
 	//fmt.Print(doc.Find("ul"))
 	doc.Find("ul").Each(func(index int, ul *goquery.Selection) {
 		ul.Find("li").Each(func(i int, li *goquery.Selection) {
-			jItem = Item{}
+			// Get the title
 			h3Selector := li.Find("h3")
 			aaSelector := h3Selector.Find("a")
 			aatag, _ := aaSelector.Attr("href")
-			if aatag != "" { //fmt.Printf("-xxxxxxxll-Post #%d:\n hfjdhfdjhfd-aaSelector %s\n hgjdhdddjhdf-aatag %s\n", i, strings.TrimSpace(aaSelector.Text()), aatag)
+			if aatag != "" {
 				jItem.Title = strings.TrimSpace(aaSelector.Text())
-				fmt.Printf("jItem title -->%v<-- \n", jItem)
+
+				// Get the size
+				size, _ := getSize(aatag, "b")
+				jItem.Size = float32(size / 1024)
+
+				// Get the page with the details
 				doc2, err := goquery.NewDocument(aatag)
 				if err != nil {
 					fmt.Println(err)
 				}
-				size, _ := getSize(aatag, "b")
-				jItem.Size = float32(size / 1024)
-				fmt.Printf("jItem size -->%v<--\n", jItem)
+
+				// Get unit price
 				doc2.Find("[id^=addItem]").Each(func(ii int, div *goquery.Selection) {
 					div.Find("p").Each(func(i int, pp *goquery.Selection) {
 						pptag, _ := pp.Attr("class")
 						if pptag == "pricePerUnit" {
 							jItem.UnitPrice = strings.TrimSpace(pp.Text())
-							fmt.Printf("jItem price -->%v<-- \n", jItem)
 						}
 					})
 				})
+
+				// Get the Description
 				doc2.Find("productcontent").Each(func(ii int, prod *goquery.Selection) {
 					htmlselector := prod.Find("htmlcontent")
 					htmlselector.Find("[class^=productDataItemHeader]").Each(func(ii int, item *goquery.Selection) {
@@ -96,19 +101,18 @@ func main() {
 							itemSelector := item.NextUntil("h3")
 							itemSelector.Each(func(ii int, desc *goquery.Selection) {
 								jItem.Description = strings.TrimSpace(desc.Text())
-								fmt.Printf("jItem desc -->%v<-- \n", jItem)
 							})
 						}
 					})
 				})
-				fmt.Printf("JITEM -->%v<--\n", jItem)
+
 				jItems = append(jItems, jItem)
 				jItem = Item{}
 
 			}
 		})
 	})
-	fmt.Printf("JITEMs -->%v<--\n", jItems)
+
 	res2B, _ := json.Marshal(jItems)
 	fmt.Println(string(res2B))
 }
