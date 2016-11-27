@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -34,7 +35,7 @@ type Items struct {
 // Item is a list of Primes
 type Item struct {
 	Title       string  `json:"title"`
-	UnitPrice   float32 `json:"unit_price"`
+	UnitPrice   string  `json:"unit_price"`
 	Size        float32 `json:"size"`
 	Description string  `json:"description"`
 }
@@ -57,98 +58,59 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	jItem := Item{}
+	jItems := []Item{}
 	// use CSS selector found with the browser inspector
 	// for each, use index and item
 
 	//fmt.Print(doc.Find("ul"))
 	doc.Find("ul").Each(func(index int, ul *goquery.Selection) {
-		//fmt.Printf("-ppopoppo-Post #%d: kkjssjs-item_as_text %s - \n", index, ul.Text())
 		ul.Find("li").Each(func(i int, li *goquery.Selection) {
-			//	linkTag := item.Find("a")
+			jItem = Item{}
 			h3Selector := li.Find("h3")
 			aaSelector := h3Selector.Find("a")
 			aatag, _ := aaSelector.Attr("href")
-
-			if aatag != "" {
-				fmt.Printf("-xxxxxxxll-Post #%d:\n hfjdhfdjhfd-aaSelector %s\n hgjdhdddjhdf-aatag %s\n", i, strings.TrimSpace(aaSelector.Text()), aatag)
+			if aatag != "" { //fmt.Printf("-xxxxxxxll-Post #%d:\n hfjdhfdjhfd-aaSelector %s\n hgjdhdddjhdf-aatag %s\n", i, strings.TrimSpace(aaSelector.Text()), aatag)
+				jItem.Title = strings.TrimSpace(aaSelector.Text())
+				fmt.Printf("jItem title -->%v<-- \n", jItem)
 				doc2, err := goquery.NewDocument(aatag)
 				if err != nil {
 					fmt.Println(err)
 				}
 				size, _ := getSize(aatag, "b")
-				fmt.Printf("size in bytes:  -->%v<--, \n ", size)
-				fmt.Printf("size in kilobytes:  -->%v<--, \n ", float32(size/1024))
-
-				//	doc2.Find("div#addItem_149117").Each(func(ii int, div *goquery.Selection) {
+				jItem.Size = float32(size / 1024)
+				fmt.Printf("jItem size -->%v<--\n", jItem)
 				doc2.Find("[id^=addItem]").Each(func(ii int, div *goquery.Selection) {
-					//fmt.Printf("detail page div  :  %v\n", div.Text())
 					div.Find("p").Each(func(i int, pp *goquery.Selection) {
 						pptag, _ := pp.Attr("class")
-						ppstring := pp.Text()
-						fmt.Printf("detail page b1:  %v, value -->%v<-- \n ", pptag, strings.TrimSpace(ppstring))
+						if pptag == "pricePerUnit" {
+							jItem.UnitPrice = strings.TrimSpace(pp.Text())
+							fmt.Printf("jItem price -->%v<-- \n", jItem)
+						}
 					})
 				})
-				doc2.Find("[class^=productTitleDescriptionContainer]").Each(func(ii int, div *goquery.Selection) {
-					fmt.Printf("detail page div lll  :  %v\n", strings.TrimSpace(div.Text()))
-					div.Find("p").Each(func(i int, pp *goquery.Selection) {
-						pptag, _ := pp.Attr("class")
-						ppstring := pp.Text()
-						fmt.Printf("detail page x1:  %v, value -->%v<-- \n ", pptag, strings.TrimSpace(ppstring))
-					})
-				})
-
 				doc2.Find("productcontent").Each(func(ii int, prod *goquery.Selection) {
 					htmlselector := prod.Find("htmlcontent")
 					htmlselector.Find("[class^=productDataItemHeader]").Each(func(ii int, item *goquery.Selection) {
-
-						//fmt.Printf("itemselector xx:  -->%v<-- \n ", item.Text())
-
 						if item.Text() == "Description" {
 							itemSelector := item.NextUntil("h3")
 							itemSelector.Each(func(ii int, desc *goquery.Selection) {
-								//fmt.Printf("Description hurrah hurrah hurrah")
-								fmt.Printf("desc :  -->%v<-- \n ", strings.TrimSpace(desc.Text()))
+								jItem.Description = strings.TrimSpace(desc.Text())
+								fmt.Printf("jItem desc -->%v<-- \n", jItem)
 							})
 						}
-
 					})
-					//fmt.Printf("itemselector :  -->%v<-- \n ", item.Text())
-
-					//htmlselector.NextUntil(selector)
-					//htmlselector := htmlselector.Find("[class^=productTitleDescriptionContainer]")
-
 				})
+				fmt.Printf("JITEM -->%v<--\n", jItem)
+				jItems = append(jItems, jItem)
+				jItem = Item{}
 
 			}
-
 		})
-		//		title := item.Text()
-		//	linkTag := item.Find("a")
-		//		link, _ := linkTag.Attr("href")
-
 	})
-
-	// scrape web page.
-	//
-	// if response, err := http.Get(url); err != nil {
-	// 	fmt.Println(err.Error())
-	// } else {
-	// 	defer response.Body.Close()
-	// 	_, err := io.Copy(os.Stdout, response.Body)
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// }
-
-	fmt.Println("-->>Server Starting.....<<--")
-	//r := mux.NewRouter()
-	//r.HandleFunc("/primes/{algorithm}/{prime}", PrimeHandler)
-	//r.HandleFunc("/primes/xml/{algorithm}/{prime}", PrimeXMLHandler)
-	// Preload array with up to 5 million in background
-	//go loadCache(sizeToCache)
-	//	http.ListenAndServe(":8081", r)
-
+	fmt.Printf("JITEMs -->%v<--\n", jItems)
+	res2B, _ := json.Marshal(jItems)
+	fmt.Println(string(res2B))
 }
 
 func getSize(url string, unit string) (float32, error) {
