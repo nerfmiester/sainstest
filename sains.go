@@ -95,13 +95,17 @@ func main() {
 				if err != nil {
 					fmt.Println(err)
 				}
+				size := doc2.Size()
+				fmt.Printf("size in bytes:  -->%v<--, \n ", size)
+				fmt.Printf("size in kilobytes:  -->%v<--, \n ", float32(size/1024))
+
 				//	doc2.Find("div#addItem_149117").Each(func(ii int, div *goquery.Selection) {
 				doc2.Find("[id^=addItem]").Each(func(ii int, div *goquery.Selection) {
 					//fmt.Printf("detail page div  :  %v\n", div.Text())
 					div.Find("p").Each(func(i int, pp *goquery.Selection) {
 						pptag, _ := pp.Attr("class")
 						ppstring := pp.Text()
-						fmt.Printf("detail page :  %v, value -->%v<-- \n ", pptag, strings.TrimSpace(ppstring))
+						fmt.Printf("detail page b1:  %v, value -->%v<-- \n ", pptag, strings.TrimSpace(ppstring))
 					})
 				})
 				doc2.Find("[class^=productTitleDescriptionContainer]").Each(func(ii int, div *goquery.Selection) {
@@ -109,7 +113,7 @@ func main() {
 					div.Find("p").Each(func(i int, pp *goquery.Selection) {
 						pptag, _ := pp.Attr("class")
 						ppstring := pp.Text()
-						fmt.Printf("detail page :  %v, value -->%v<-- \n ", pptag, strings.TrimSpace(ppstring))
+						fmt.Printf("detail page x1:  %v, value -->%v<-- \n ", pptag, strings.TrimSpace(ppstring))
 					})
 
 				})
@@ -142,6 +146,11 @@ func main() {
 	// Preload array with up to 5 million in background
 	go loadCache(sizeToCache)
 	http.ListenAndServe(":8081", r)
+
+}
+
+func getSize(url string) (float32, err) {
+	return 500, nil
 
 }
 
