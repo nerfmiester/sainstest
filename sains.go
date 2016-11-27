@@ -39,6 +39,7 @@ type Item struct {
 	Size        float32 `json:"size"`
 	Description string  `json:"description"`
 }
+type findInDocT func(index int, sel *goquery.Selection) *goquery.Selection
 
 func init() {
 
@@ -64,6 +65,15 @@ func main() {
 	// for each, use index and item
 
 	//fmt.Print(doc.Find("ul"))
+	// 	findInDoc(doc, "ul",findInDoc(doc, "li", func() {
+	//
+	// 	})).Each(func(arg1 int, arg1 *goquery.Selection {
+	//
+	// 	})
+	// findInDoc(doc, "li", func() {
+	//
+	// })
+
 	doc.Find("ul").Each(func(index int, ul *goquery.Selection) {
 		ul.Find("li").Each(func(i int, li *goquery.Selection) {
 			// Get the title
@@ -108,7 +118,6 @@ func main() {
 
 				jItems = append(jItems, jItem)
 				jItem = Item{}
-
 			}
 		})
 	})
@@ -133,6 +142,14 @@ func getSize(url string, unit string) (float32, error) {
 	return float32(l), nil
 
 }
+
+//func findInDoc(doc *goquery.Document, selector string, func1 findInDocT) *goquery.Selection {
+
+//return doc.Find(selector).Each(func1)
+
+//}
+
+//func getTitleInDoc()
 
 func usage() {
 
