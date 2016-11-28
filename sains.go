@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -16,27 +17,28 @@ import (
 
 var (
 	x, y, n, intPrime uint64
-	z                 string
-	algorithm         string
-	writer            io.Writer
-	primeSlice        = []uint64{}
+	itemStruct        = Items{}
+	totUnitPrice      = float64(0)
+	doc, doc2         *goquery.Document
+	err               error
 	usageBool         bool
-	ok                bool
-	usetoml           bool
+	jsonItems         []byte
+	size              string
 	//mapToPrimes       = map[uint64]Primers{}
 	url = "http://hiring-tests.s3-website-eu-west-1.amazonaws.com/2015_Developer_Scrape/5_products.html"
 )
 
 // Items is a list of Primes
 type Items struct {
-	Items []Item `json:"itmes"`
+	Items          []Item  `json:"results"`
+	TotalUnitPrice float64 `json:"total"`
 }
 
 // Item is a list of Primes
 type Item struct {
 	Title       string  `json:"title"`
-	UnitPrice   string  `json:"unit_price"`
-	Size        float32 `json:"size"`
+	Size        string  `json:"size"`
+	UnitPrice   float64 `json:"unit_price"`
 	Description string  `json:"description"`
 }
 type findInDocT func(index int, sel *goquery.Selection) *goquery.Selection
@@ -55,12 +57,13 @@ func main() {
 		os.Exit(0)
 	}
 
-	doc, err := goquery.NewDocument(url)
+	doc, err = goquery.NewDocument(url)
 	if err != nil {
 		log.Fatal(err)
 	}
 	jItem := Item{}
 	jItems := []Item{}
+
 	// use CSS selector found with the browser inspector
 	// for each, use index and item
 
@@ -74,11 +77,14 @@ func main() {
 				jItem.Title = strings.TrimSpace(aaSelector.Text())
 
 				// Get the size
-				size, _ := getSize(aatag, "b")
-				jItem.Size = float32(size / 1024)
+				size, err = getSize(aatag, "b")
+				if err != nil {
+					fmt.Println(err)
+				}
+				jItem.Size = size
 
 				// Get the page with the details
-				doc2, err := goquery.NewDocument(aatag)
+				doc2, err = goquery.NewDocument(aatag)
 				if err != nil {
 					fmt.Println(err)
 				}
@@ -88,9 +94,13 @@ func main() {
 					itemPrice.Find("[class$=pricePerUnit]").Each(func(i int, pp *goquery.Selection) {
 
 						pptag, _ := pp.Attr("class")
-						fmt.Printf("elem -->%v<--", pptag)
+
 						if pptag == "pricePerUnit" {
-							jItem.UnitPrice = strings.TrimSpace(pp.Text())
+							jItem.UnitPrice, err = getPrice(strings.TrimSpace(pp.Text()))
+							totUnitPrice += jItem.UnitPrice
+							if err != nil {
+								fmt.Println(err)
+							}
 						}
 					})
 				})
@@ -113,12 +123,20 @@ func main() {
 			}
 		})
 	})
+	itemStruct.Items = jItems
+	itemStruct.TotalUnitPrice = toFixed(totUnitPrice, 2)
 
-	res2B, _ := json.Marshal(jItems)
-	fmt.Println(string(res2B))
+	jsonItems, err = jsonEncoder(itemStruct)
+
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Printf("Returned JSON doc is -->%v<--", string(jsonItems))
+	}
+
 }
 
-func getSize(url string, unit string) (float32, error) {
+func getSize(url string, unit string) (string, error) {
 
 	res, err := http.Get(url)
 	if err != nil {
@@ -130,9 +148,32 @@ func getSize(url string, unit string) (float32, error) {
 		fmt.Println(err)
 		// handle error
 	}
-	l := len(body)
-	return float32(l), nil
+	return strconv.Itoa(round(float64(len(body))/1024)) + unit, nil
+}
 
+func jsonEncoder(jItems Items) ([]byte, error) {
+	jsonItems, err := json.Marshal(jItems)
+	if err != nil {
+		return nil, err
+	}
+	return jsonItems, nil
+
+}
+func getPrice(s string) (float64, error) {
+	sFloat, err := strconv.ParseFloat(s[(strings.Index(s, "£")+2):strings.LastIndex(s, "/")], 64)
+	if err != nil {
+		return 0.0, err
+	}
+
+	return sFloat, nil
+
+}
+func toFixed(num float64, precision int) float64 {
+	output := math.Pow(10, float64(precision))
+	return float64(round(num*output)) / output
+}
+func round(num float64) int {
+	return int(num + math.Copysign(0.5, num))
 }
 
 func usage() {
