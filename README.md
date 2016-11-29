@@ -1,4 +1,4 @@
-# prime
+# Sainsburys' coding exam
 
       Usage
       =====
